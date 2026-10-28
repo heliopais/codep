@@ -4,7 +4,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve symlinks so Homebrew Cellar paths work correctly
+REAL_BIN="$(realpath "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "$REAL_BIN")" && pwd)"
 
 # Discover resolver.py and launcher.applescript across different installation types
 RESOLVER=""
