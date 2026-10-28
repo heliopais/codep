@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# codep: CLI and launcher companion for macOS Spotlight project navigation.
+# https://github.com/heliopais/codep
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOLVER="$SCRIPT_DIR/../src/resolver.py"
+
+# If installed inside ~/.local/bin or /usr/local/bin, find the resolver
+if [ ! -f "$RESOLVER" ]; then
+    if [ -f "$HOME/Applications/codep.app/Contents/Resources/resolver.py" ]; then
+        RESOLVER="$HOME/Applications/codep.app/Contents/Resources/resolver.py"
+    fi
+fi
+
+show_help() {
+    cat << 'EOF'
+codep — Instant macOS Spotlight & CLI project opener
+
+USAGE:
+  codep                     Open the native Spotlight / GUI prompt
+  codep <query>             Directly open a project matching <query>
+  codep -l, --list          List all discovered project directories
+  codep -h, --help          Show this help message
+
+EXAMPLES:
+  codep mrt
+  codep "benefits training"
+  codep "exo inference"
+  codep okrs
+
+ENVIRONMENT:
+  CODEP_EDITOR              Target editor (default: "Visual Studio Code")
+  CODEP_SEARCH_ROOTS        Colon-separated search roots (e.g. "$HOME/repos:$HOME/Documents")
+  CODEP_CONFIG              Path to custom config.json
+
+CONFIGURATION:
+  Optional JSON config at ~/.config/codep/config.json
+EOF
+}
+
+if [ $# -eq 0 ]; then
+    # Launch GUI app
+    if [ -d "$HOME/Applications/codep.app" ]; then
+        open -a "$HOME/Applications/codep.app"
+    elif [ -d "/Applications/codep.app" ]; then
+        open -a "/Applications/codep.app"
+    else
+        echo "codep.app not found in ~/Applications. Run ./install.sh first."
+        exit 1
+    fi
+    exit 0
+fi
+
+case "$1" in
+    -h|--help)
+        show_help
+        exit 0
+        ;;
+    -l|--list)
+        python3 -c "
+import sys, os
+sys.path.insert(0, os.path.dirname('$RESOLVER'))
+from resolver import load_config, get_candidate_folders
+cfg = load_config()
+cands = get_candidate_folders(cfg['search_roots'], cfg['ignored_dirs'], cfg['max_depth'])
+for c in sorted(cands):
+    print(c)
+"
+        exit 0
+        ;;
+    *)
+        if [ ! -f "$RESOLVER" ]; then
+            echo "Error: resolver.py not found." >&2
+            exit 1
+        fi
+        
+        output=$(python3 "$RESOLVER" "$*")
+        
+        editor="Visual Studio Code"
+        mode=""
+        paths=()
+        
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^EDITOR:(.*) ]]; then
+                editor="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^MODE:(.*) ]]; then
+                mode="${BASH_REMATCH[1]}"
+            elif [ -n "$line" ]; then
+                paths+=("$line")
+            fi
+        done <<< "$output"
+        
+        if [ "$mode" = "SINGLE" ]; then
+            target="${paths[0]}"
+            echo "Opening $target in $editor..."
+            open -a "$editor" "$target"
+        elif [ "$mode" = "MULTIPLE" ] || [ "$mode" = "APPROX" ]; then
+            if [ "$mode" = "MULTIPLE" ]; then
+                echo "Multiple matches found for '$*':"
+            else
+                echo "No exact match for '$*'. Approximate matches:"
+            fi
+            
+            # Interactive numbered menu
+            select opt in "${paths[@]}" "Cancel"; do
+                if [ "$opt" = "Cancel" ] || [ -z "$opt" ]; then
+                    echo "Cancelled."
+                    exit 0
+                fi
+                # Expand leading ~/
+                expanded="${opt/#\~/$HOME}"
+                echo "Opening $expanded in $editor..."
+                open -a "$editor" "$expanded"
+                break
+            done
+        else
+            echo "No matching or approximate projects found for '$*'." >&2
+            exit 1
+        fi
+        ;;
+esac
