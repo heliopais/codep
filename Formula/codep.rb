@@ -2,7 +2,7 @@ class Codep < Formula
   desc "Instant macOS Spotlight & CLI launcher for your code projects"
   homepage "https://github.com/heliopais/codep"
   url "https://github.com/heliopais/codep/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000" # Updated on release tag
+  sha256 "16287f9f9db00043e5e7581fcd20db0c7019dc2ff9e70bac4bb3b4d47a69082b"
   license "MIT"
   head "https://github.com/heliopais/codep.git", branch: "main"
 
