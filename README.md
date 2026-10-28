@@ -20,7 +20,7 @@ No heavy background daemons, no Electron bloat, and zero external package depend
 
 1. Hit **`⌘ Space`**, type **`codep`** (or just `code`), and hit **`Return`**.
 2. A lightweight prompt appears, immediately focused and ready for typing.
-3. Type your project name (e.g., `mrt`, `benefits training`, `exo inference`) and press **`Return`**.
+3. Type your project name (e.g., `backend`, `api v2`, `web frontend`) and press **`Return`**.
 4. Your editor opens directly on that project folder.
 
 ---
@@ -28,9 +28,9 @@ No heavy background daemons, no Electron bloat, and zero external package depend
 ## Features
 
 - **⚡️ Zero-Click Focus Bypass:** Uses native macOS `AppKit` (`activateIgnoringOtherApps:true`) to bypass window focus-stealing prevention. When launched from Spotlight, the prompt snaps frontmost and accepts keystrokes immediately.
-- **🧠 Multi-Token Path Intelligence:** Searches both folder names and repository hierarchy. For example, typing `"benefits training"` immediately matches `~/repos/benefits/benefits-model-training`.
+- **🧠 Multi-Token Path Intelligence:** Searches both folder names and repository hierarchy. For example, typing `"api v2"` immediately matches `~/Developer/api/api-backend-v2`.
 - **🎯 Instant Single-Winner Launch:** Unambiguous or exact matches skip confirmation dialogs and launch your editor instantly.
-- **🪄 "Did You Mean...?" Fuzzy Fallback:** Typos and approximate searches (e.g. `"benifits train"`) automatically present the closest ranked options with the top candidate pre-selected.
+- **🪄 "Did You Mean...?" Fuzzy Fallback:** Typos and approximate searches (e.g. `"bakcend api"`) automatically present the closest ranked options with the top candidate pre-selected.
 - **💻 CLI Companion:** Includes a terminal command (`codep <query>`) so you can jump into projects directly from your shell.
 - **🎨 Multi-Editor Support:** Works out of the box with **Visual Studio Code**, **Cursor**, **Zed**, **VSCodium**, **Windsurf**, or any editor of your choice.
 - **🪶 Zero Dependencies:** Built strictly using native AppleScript and the macOS Python standard library. No `brew`, `pip`, or `npm` installs required.
@@ -106,10 +106,10 @@ You can also use `codep` straight from your shell:
 
 ```bash
 # Jump directly to a project
-codep mrt
+codep backend
 
 # Multi-token search
-codep "benefits training"
+codep "api v2"
 
 # Open the native GUI prompt
 codep

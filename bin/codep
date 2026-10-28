@@ -105,10 +105,10 @@ USAGE:
   codep -h, --help          Show this help message
 
 EXAMPLES:
-  codep mrt
-  codep "benefits training"
-  codep "exo inference"
-  codep okrs
+  codep backend
+  codep "api v2"
+  codep "web frontend"
+  codep docs
 
 ENVIRONMENT:
   CODEP_EDITOR              Target editor (default: "Visual Studio Code")

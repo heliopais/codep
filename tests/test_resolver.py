@@ -18,15 +18,15 @@ class TestCodepResolver(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         # Create simulated directory hierarchy
         self.candidates = [
-            os.path.join(self.test_dir, "repos", "benefits"),
-            os.path.join(self.test_dir, "repos", "benefits", "benefits-model-training"),
-            os.path.join(self.test_dir, "repos", "benefits", "benefits-compensation-partner"),
-            os.path.join(self.test_dir, "repos", "exo", "exo-inference"),
-            os.path.join(self.test_dir, "repos", "exo", "exo-training"),
-            os.path.join(self.test_dir, "repos", "docs", "okrs-helio"),
-            os.path.join(self.test_dir, "repos", "docs", "okrs-nandani"),
-            os.path.join(self.test_dir, "Documents", "CW"),
-            os.path.join(self.test_dir, "Documents", "hNotes"),
+            os.path.join(self.test_dir, "repos", "api"),
+            os.path.join(self.test_dir, "repos", "api", "api-backend-v2"),
+            os.path.join(self.test_dir, "repos", "api", "api-client-sdk"),
+            os.path.join(self.test_dir, "repos", "web", "web-frontend"),
+            os.path.join(self.test_dir, "repos", "web", "web-dashboard"),
+            os.path.join(self.test_dir, "repos", "docs", "docs-internal"),
+            os.path.join(self.test_dir, "repos", "docs", "docs-public"),
+            os.path.join(self.test_dir, "Documents", "Projects"),
+            os.path.join(self.test_dir, "Documents", "Notes"),
         ]
         for p in self.candidates:
             os.makedirs(p, exist_ok=True)
@@ -34,33 +34,33 @@ class TestCodepResolver(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    def test_multi_token_benefits_training(self):
+    def test_multi_token_api_backend(self):
         mode, paths = resolve(
-            "benefits training",
+            "api backend",
             candidate_override=self.candidates
         )
         self.assertEqual(mode, "SINGLE")
-        self.assertTrue(paths[0].endswith("benefits-model-training"))
+        self.assertTrue(paths[0].endswith("api-backend-v2"))
 
-    def test_multi_token_exo_inference(self):
+    def test_multi_token_web_frontend(self):
         mode, paths = resolve(
-            "exo inference",
+            "web frontend",
             candidate_override=self.candidates
         )
         self.assertEqual(mode, "SINGLE")
-        self.assertTrue(paths[0].endswith("exo-inference"))
+        self.assertTrue(paths[0].endswith("web-frontend"))
 
-    def test_multi_token_okrs_helio(self):
+    def test_multi_token_docs_internal(self):
         mode, paths = resolve(
-            "okrs helio",
+            "docs internal",
             candidate_override=self.candidates
         )
         self.assertEqual(mode, "SINGLE")
-        self.assertTrue(paths[0].endswith("okrs-helio"))
+        self.assertTrue(paths[0].endswith("docs-internal"))
 
-    def test_disambiguation_okrs(self):
+    def test_disambiguation_docs(self):
         mode, paths = resolve(
-            "okrs",
+            "docs",
             candidate_override=self.candidates
         )
         self.assertEqual(mode, "MULTIPLE")
@@ -68,13 +68,12 @@ class TestCodepResolver(unittest.TestCase):
 
     def test_approximate_match_on_typos(self):
         mode, paths = resolve(
-            "benifits train",
+            "bakcend api",
             candidate_override=self.candidates
         )
-        # Should be APPROX or SINGLE pointing to benefits-model-training
         self.assertIn(mode, ("APPROX", "SINGLE"))
         best = paths[0]
-        self.assertTrue("benefits-model-training" in best or "benefits" in best)
+        self.assertTrue("api-backend" in best or "api" in best)
 
     def test_direct_path(self):
         mode, paths = resolve(self.test_dir)
