@@ -5,14 +5,91 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RESOLVER="$SCRIPT_DIR/../src/resolver.py"
 
-# If installed inside ~/.local/bin or /usr/local/bin, find the resolver
-if [ ! -f "$RESOLVER" ]; then
-    if [ -f "$HOME/Applications/codep.app/Contents/Resources/resolver.py" ]; then
-        RESOLVER="$HOME/Applications/codep.app/Contents/Resources/resolver.py"
+# Discover resolver.py and launcher.applescript across different installation types
+RESOLVER=""
+LAUNCHER=""
+
+CANDIDATE_RESOLVERS=(
+    "$SCRIPT_DIR/../src/resolver.py"
+    "$SCRIPT_DIR/../libexec/resolver.py"
+    "$SCRIPT_DIR/../share/codep/resolver.py"
+    "$HOME/Applications/codep.app/Contents/Resources/resolver.py"
+    "/Applications/codep.app/Contents/Resources/resolver.py"
+)
+
+CANDIDATE_LAUNCHERS=(
+    "$SCRIPT_DIR/../src/launcher.applescript"
+    "$SCRIPT_DIR/../libexec/launcher.applescript"
+    "$SCRIPT_DIR/../share/codep/launcher.applescript"
+)
+
+for r in "${CANDIDATE_RESOLVERS[@]}"; do
+    if [ -f "$r" ]; then
+        RESOLVER="$r"
+        break
     fi
-fi
+done
+
+for l in "${CANDIDATE_LAUNCHERS[@]}"; do
+    if [ -f "$l" ]; then
+        LAUNCHER="$l"
+        break
+    fi
+done
+
+setup_app() {
+    local dest_dir="${CODEP_DEST_DIR:-$HOME/Applications}"
+    local app_name="${CODEP_APP_NAME:-codep}"
+    local target_app="$dest_dir/$app_name.app"
+    local editor_name="${CODEP_EDITOR:-Visual Studio Code}"
+
+    echo "==> Setting up $app_name.app in $dest_dir..."
+
+    if [ -z "$LAUNCHER" ] || [ ! -f "$LAUNCHER" ]; then
+        echo "Error: launcher.applescript not found." >&2
+        exit 1
+    fi
+
+    if [ -z "$RESOLVER" ] || [ ! -f "$RESOLVER" ]; then
+        echo "Error: resolver.py not found." >&2
+        exit 1
+    fi
+
+    mkdir -p "$dest_dir"
+    echo "==> Compiling native launcher with Cocoa focus integration..."
+    osacompile -o "$target_app" "$LAUNCHER"
+
+    mkdir -p "$target_app/Contents/Resources"
+    cp "$RESOLVER" "$target_app/Contents/Resources/resolver.py"
+    chmod +x "$target_app/Contents/Resources/resolver.py"
+
+    echo "==> Configuring icon..."
+    local icon_found=false
+    local possible_icons=(
+        "/Applications/$editor_name.app/Contents/Resources/Code.icns"
+        "/Applications/$editor_name.app/Contents/Resources/$editor_name.icns"
+        "/Applications/Visual Studio Code.app/Contents/Resources/Code.icns"
+        "/Applications/Cursor.app/Contents/Resources/Cursor.icns"
+        "/Applications/Zed.app/Contents/Resources/Zed.icns"
+    )
+
+    for icns in "${possible_icons[@]}"; do
+        if [ -f "$icns" ]; then
+            cp "$icns" "$target_app/Contents/Resources/applet.icns"
+            icon_found=true
+            echo "    Using icon from: $icns"
+            break
+        fi
+    done
+
+    if [ "$icon_found" = false ]; then
+        echo "    (No custom icon found; using default applet icon)"
+    fi
+
+    touch "$target_app"
+    echo "==> Setup complete! Hit Cmd + Space, type '$app_name', and press Return."
+}
 
 show_help() {
     cat << 'EOF'
@@ -21,6 +98,7 @@ codep — Instant macOS Spotlight & CLI project opener
 USAGE:
   codep                     Open the native Spotlight / GUI prompt
   codep <query>             Directly open a project matching <query>
+  codep setup               Compile / update codep.app in ~/Applications
   codep -l, --list          List all discovered project directories
   codep -h, --help          Show this help message
 
@@ -47,18 +125,27 @@ if [ $# -eq 0 ]; then
     elif [ -d "/Applications/codep.app" ]; then
         open -a "/Applications/codep.app"
     else
-        echo "codep.app not found in ~/Applications. Run ./install.sh first."
-        exit 1
+        echo "codep.app not found. Running first-time setup..."
+        setup_app
+        open -a "$HOME/Applications/codep.app"
     fi
     exit 0
 fi
 
 case "$1" in
+    setup)
+        setup_app
+        exit 0
+        ;;
     -h|--help)
         show_help
         exit 0
         ;;
     -l|--list)
+        if [ -z "$RESOLVER" ]; then
+            echo "Error: resolver.py not found." >&2
+            exit 1
+        fi
         python3 -c "
 import sys, os
 sys.path.insert(0, os.path.dirname('$RESOLVER'))
@@ -71,7 +158,7 @@ for c in sorted(cands):
         exit 0
         ;;
     *)
-        if [ ! -f "$RESOLVER" ]; then
+        if [ -z "$RESOLVER" ]; then
             echo "Error: resolver.py not found." >&2
             exit 1
         fi

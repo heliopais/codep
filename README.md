@@ -39,6 +39,20 @@ No heavy background daemons, no Electron bloat, and zero external package depend
 
 ## Installation
 
+### Option 1: Via Homebrew (Recommended)
+
+```bash
+# Install via Homebrew tap
+brew install heliopais/codep/codep
+
+# Run one-time setup to compile codep.app into ~/Applications
+codep setup
+```
+
+---
+
+### Option 2: From Source
+
 Clone the repository and run the installer:
 
 ```bash

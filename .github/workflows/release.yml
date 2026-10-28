@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Build codep.app
+        run: |
+          mkdir -p build/codep.app/Contents/Resources
+          osacompile -o build/codep.app src/launcher.applescript
+          cp src/resolver.py build/codep.app/Contents/Resources/resolver.py
+          chmod +x build/codep.app/Contents/Resources/resolver.py
+          cp bin/codep build/codep
+          chmod +x build/codep
+
+      - name: Package Release Archive
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd build
+          tar -czvf "codep-${VERSION}.tar.gz" codep.app codep
+          shasum -a 256 "codep-${VERSION}.tar.gz" > "codep-${VERSION}.tar.gz.sha256"
+          echo "SHA256: $(cat codep-${VERSION}.tar.gz.sha256)"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/codep-*.tar.gz
+            build/codep-*.tar.gz.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
